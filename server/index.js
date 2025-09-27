@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import authRoutes from './routes/auth.js';
 import candidateRoutes from './routes/candidateRoutes.js';
 import { generateQuestion } from './lib/ai.js';
+import userRoutes from './routes/userRoutes.js';
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ mongoose.connect(process.env.MONGO_URI)
 // --- API Routes ---
 app.use('/api/auth', authRoutes);
 app.use('/api/candidates', candidateRoutes);
+app.use('/api/users', userRoutes);
 
 app.post('/api/interview/start', async (req, res) => {
   // Note: This might also become a protected route later
