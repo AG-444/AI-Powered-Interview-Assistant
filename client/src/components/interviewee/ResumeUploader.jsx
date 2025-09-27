@@ -29,16 +29,11 @@ const ResumeUploader = ({ onUploadSuccess }) => {
           'Content-Type': 'multipart/form-data',
         },
       });
-      onUploadSuccess(response.data);
+      onUploadSuccess(response.data, file.name);
     } catch (err) {
       if (err.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        console.error('Server Response:', err.response.data);
         setError(err.response.data.message || 'An error occurred during upload.');
       } else {
-        // Something happened in setting up the request that triggered an Error
-        console.error('Error:', err.message);
         setError('An error occurred. Is the server running?');
       }
     }
@@ -56,9 +51,12 @@ const ResumeUploader = ({ onUploadSuccess }) => {
         <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28"
           strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-      <p className="mt-4 text-lg font-semibold text-white">
+
+      {/* --- FIX IS HERE: Added "break-all" class --- */}
+      <p className="mt-4 text-lg font-semibold text-white break-all">
         {file ? file.name : 'Upload your resume to start'}
       </p>
+      
       <p className="mt-2 text-sm text-gray-400">PDF or DOCX, up to 10MB</p>
       <div className="mt-6">
         <label

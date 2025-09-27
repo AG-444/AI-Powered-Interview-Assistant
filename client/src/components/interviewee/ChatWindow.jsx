@@ -1,43 +1,55 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import ChatMessage from './ChatMessage';
+import ChatMessage from './ChatMessage.jsx';
 
-const ChatWindow = ({ candidate, onProfileComplete }) => {
+const ChatWindow = ({ candidate, resumeFilename, onProfileComplete }) => {
   const [messages, setMessages] = useState([]);
   const [userInput, setUserInput] = useState('');
   const [missingFields, setMissingFields] = useState([]);
   const [currentCandidate, setCurrentCandidate] = useState(candidate);
-  
-  const chatEndRef = useRef(null);
 
-  // This effect runs once to check for missing info and start the conversation
+  const chatEndRef = useRef(null);
+  const initCheckDone = useRef(false);
+
   useEffect(() => {
+    if (initCheckDone.current) return;
+
     const fields = [];
+    if (!candidate.email) fields.push('email');
     if (!candidate.name) fields.push('name');
     if (!candidate.phone) fields.push('phone');
-    // We assume email is always present as it's our unique identifier
-    
+
     setMissingFields(fields);
 
+    // Add the file confirmation message first
+    const initialMessages = [{ sender: 'ai', text: `Thanks for uploading "${resumeFilename}"!` }];
+
     if (fields.length > 0) {
-      setMessages([{ sender: 'ai', text: 'Thanks for uploading your resume! I just need a little more information to get started.' }]);
+      initialMessages.push({ sender: 'ai', text: 'I just need a bit more info to get started.' });
+      setMessages(initialMessages);
       askForNextField(fields);
     } else {
-      // If nothing is missing, move on
-      onProfileComplete(candidate);
+      initialMessages.push({ sender: 'ai', text: 'Your profile looks complete.' });
+      setMessages(initialMessages);
+      // Small delay so the user can read the messages before the screen changes
+      setTimeout(() => {
+        onProfileComplete(candidate);
+      }, 2000);
     }
-  }, [candidate]);
 
-  // Scroll to the bottom of the chat on new messages
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    initCheckDone.current = true;
+  }, [candidate, onProfileComplete, resumeFilename]);
+
+  // ... (The rest of your ChatWindow.jsx code remains the same) ...
 
   const askForNextField = (fields) => {
     if (fields.length === 0) return;
     const nextField = fields[0];
     let question = '';
     switch (nextField) {
+      case 'email':
+        question = 'I couldn\'t find an email in the resume. What is your email address?';
+        break;
       case 'name':
         question = 'What is your full name?';
         break;
@@ -48,8 +60,8 @@ const ChatWindow = ({ candidate, onProfileComplete }) => {
         return;
     }
     setTimeout(() => {
-        setMessages(prev => [...prev, { sender: 'ai', text: question }]);
-    }, 500);
+      setMessages(prev => [...prev, { sender: 'ai', text: question }]);
+    }, 1200); // Increased delay slightly
   };
 
   const handleUserInput = (e) => {
@@ -64,9 +76,9 @@ const ChatWindow = ({ candidate, onProfileComplete }) => {
     setMessages(newMessages);
 
     const currentField = missingFields[0];
-    const updatedCandidate = { ...currentCandidate, [currentField]: userInput };
-    setCurrentCandidate(updatedCandidate);
-    
+    const updatedCandidateData = { ...currentCandidate, [currentField]: userInput };
+    setCurrentCandidate(updatedCandidateData);
+
     setUserInput('');
 
     const remainingFields = missingFields.slice(1);
@@ -75,20 +87,20 @@ const ChatWindow = ({ candidate, onProfileComplete }) => {
     if (remainingFields.length > 0) {
       askForNextField(remainingFields);
     } else {
-      // All info collected, update the database
       try {
-        setMessages(prev => [...prev, { sender: 'ai', text: 'Great, thank you! One moment while I save your profile.' }]);
-        const response = await axios.patch(`http://localhost:5001/api/candidates/${currentCandidate._id}`, {
-          [currentField]: userInput
-        });
-        onProfileComplete(response.data); // Notify parent component that profile is complete
+        setMessages(prev => [...prev, { sender: 'ai', text: 'Great, thank you! One moment...' }]);
+        const response = await axios.patch(`http://localhost:5001/api/candidates/${updatedCandidateData._id}`, updatedCandidateData);
+
+        setTimeout(() => {
+          onProfileComplete(response.data);
+        }, 1000);
+
       } catch (error) {
         console.error("Error updating candidate:", error);
-        setMessages(prev => [...prev, { sender: 'ai', text: 'Sorry, there was an error saving your info. Please try refreshing.' }]);
+        setMessages(prev => [...prev, { sender: 'ai', text: 'Sorry, there was an error saving your info.' }]);
       }
     }
   };
-
 
   return (
     <div className="flex h-[600px] w-full max-w-2xl flex-col rounded-lg border border-gray-700 bg-gray-800 text-white">
@@ -108,6 +120,7 @@ const ChatWindow = ({ candidate, onProfileComplete }) => {
               onChange={handleUserInput}
               className="flex-grow rounded-l-md border-0 bg-gray-700 px-4 py-2 text-white focus:ring-2 focus:ring-violet-500"
               placeholder="Type your answer..."
+              autoFocus
             />
             <button
               type="submit"
