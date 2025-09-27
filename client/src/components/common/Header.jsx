@@ -46,7 +46,7 @@ const Header = () => {
             {path !== '/profile' && <Link to="/profile" className="text-sm font-medium hover:text-violet-300 transition">Profile</Link>}
             <button
               onClick={handleLogout}
-              className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition text-sm"
+              className="hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition text-sm"
             >
               Logout
             </button>

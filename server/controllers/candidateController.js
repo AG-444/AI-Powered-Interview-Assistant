@@ -1,15 +1,11 @@
 import Candidate from '../models/Candidate.js';
 import User from '../models/User.js';
 import { extractNameFromResume } from '../lib/ai.js';
-// You will need to bring in pdf-parse and mammoth setup here as well
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 const pdf = require('pdf-parse');
 import mammoth from 'mammoth';
 
-// @desc    Upload resume, create candidate profile and interview attempt
-// @route   POST /api/candidates
-// @access  Private
 export const uploadResume = async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ message: 'No file uploaded.' });
@@ -23,13 +19,23 @@ export const uploadResume = async (req, res) => {
         const result = await mammoth.extractRawText({ buffer: req.file.buffer });
         text = result.value;
     }
-
-    const extractedInfo = await extractNameFromResume(text); // Using simplified AI for name only
-
+    
+    // --- CORRECTED HYBRID EXTRACTION LOGIC ---
+    // 1. Use Regex for Email and Phone first
     const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
     const phoneRegex = /(\+\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/;
-    extractedInfo.email = text.match(emailRegex)?.[0] || req.user.email;
-    extractedInfo.phone = text.match(phoneRegex)?.[0];
+    const emailMatch = text.match(emailRegex);
+    const phoneMatch = text.match(phoneRegex);
+
+    // 2. Initialize extractedInfo as an OBJECT
+    const extractedInfo = {
+      email: emailMatch ? emailMatch[0] : (req.user.email || null),
+      phone: phoneMatch ? phoneMatch[0] : null,
+    };
+    
+    // 3. Use AI for the Name and add it to the object
+    extractedInfo.name = await extractNameFromResume(text);
+    // --- END OF CORRECTION ---
 
     // Update the main User profile with extracted info if it's missing
     const user = await User.findById(req.user._id);
@@ -54,9 +60,6 @@ export const uploadResume = async (req, res) => {
   }
 };
 
-// @desc    Get all interview attempts for a user
-// @route   GET /api/candidates/my-interviews
-// @access  Private
 export const getMyInterviews = async (req, res) => {
     try {
         const interviews = await Candidate.find({ user: req.user._id }).sort({ createdAt: -1 });

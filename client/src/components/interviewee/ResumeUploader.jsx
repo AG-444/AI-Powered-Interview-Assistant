@@ -1,9 +1,13 @@
 import { useState } from 'react';
 import axios from 'axios';
+import { useSelector } from 'react-redux'; // 1. Import useSelector
 
 const ResumeUploader = ({ onUploadSuccess }) => {
   const [file, setFile] = useState(null);
   const [error, setError] = useState('');
+  
+  // 2. Get user info from the Redux store
+  const { userInfo } = useSelector((state) => state.auth);
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -24,11 +28,17 @@ const ResumeUploader = ({ onUploadSuccess }) => {
     formData.append('resume', file);
 
     try {
-      const response = await axios.post('http://localhost:5001/api/candidates', formData, {
+      // 3. Create a config object with the Authorization header
+      const config = {
         headers: {
           'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${userInfo.token}`,
         },
-      });
+      };
+
+      // 4. Pass the config object to the axios call
+      const response = await axios.post('http://localhost:5001/api/candidates', formData, config);
+      
       onUploadSuccess(response.data, file.name);
     } catch (err) {
       if (err.response) {
@@ -51,10 +61,9 @@ const ResumeUploader = ({ onUploadSuccess }) => {
         <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28"
           strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-
-      {/* --- FIX IS HERE: Added "break-all" class --- */}
+      
       <p className="mt-4 text-lg font-semibold text-white break-all">
-        {file ? file.name : 'Upload your resume to start'}
+        {file ? file.name : 'Upload a new or updated resume'}
       </p>
       
       <p className="mt-2 text-sm text-gray-400">PDF or DOCX, up to 10MB</p>
