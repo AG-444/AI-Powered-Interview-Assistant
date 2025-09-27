@@ -19,10 +19,11 @@ const LoginPage = () => {
   useEffect(() => {
     if (userInfo) {
       if (userInfo.role === 'interviewee') {
-        navigate('/interview');
+        // --- FIX IS HERE: Redirect to /dashboard ---
+        navigate('/dashboard'); 
       } else {
         // Later, you can redirect interviewers to their dashboard
-        // navigate('/dashboard'); 
+        // navigate('/interviewer-dashboard'); 
       }
     }
   }, [navigate, userInfo]);
@@ -31,18 +32,13 @@ const LoginPage = () => {
     e.preventDefault();
     setError('');
 
-    // Determine the correct API endpoint based on the view
     const url = isLoginView ? 'http://localhost:5001/api/auth/login' : 'http://localhost:5001/api/auth/register';
     const payload = isLoginView ? { email, password } : { email, password, role };
 
     try {
-      // Make the API call to the backend
       const res = await axios.post(url, payload);
-      // On success, dispatch the user data to the Redux store
       dispatch(setCredentials(res.data));
-      // The useEffect hook will then handle redirecting the user
     } catch (err) {
-      // If the API returns an error, display it
       setError(err.response?.data?.message || 'An error occurred');
     }
   };
@@ -55,7 +51,6 @@ const LoginPage = () => {
 
   return (
     <div className="flex w-full flex-grow items-center justify-center p-4">
-      {/* This motion.div with the 'layout' prop provides the smooth resizing animation */}
       <motion.div
         layout
         transition={{ layout: { duration: 0.3, type: 'spring', stiffness: 400, damping: 30 } }}

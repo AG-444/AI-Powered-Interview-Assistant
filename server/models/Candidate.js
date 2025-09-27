@@ -1,12 +1,16 @@
 import mongoose from 'mongoose';
 
 const CandidateSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    ref: 'User',
+  },
   name: {
     type: String,
   },
   email: {
     type: String,
-    // unique and sparse have been removed from here
   },
   phone: {
     type: String,
@@ -22,7 +26,7 @@ const CandidateSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
-// --- ADD THIS NEW INDEX DEFINITION ---
+// Creates a unique index only for documents that have an email value
 CandidateSchema.index(
   { email: 1 },
   {
@@ -30,7 +34,6 @@ CandidateSchema.index(
     partialFilterExpression: { email: { $ne: null } }
   }
 );
-// ------------------------------------
 
 const Candidate = mongoose.model('Candidate', CandidateSchema);
 
